@@ -17,6 +17,8 @@ export async function checkoutApi(request,env){
  if(raw===null||new TextEncoder().encode(raw).byteLength>8192)return reply({error:"Request too large"},413);
  const b=(()=>{try{return JSON.parse(raw)}catch{return null}})();
  if(!b||typeof b!=="object"||Array.isArray(b))return reply({error:"Invalid order"},400);
+ const limits={package_code:30,care_code:30,domain_choice:30,customer_name:120,customer_email:254,business_name:120};
+ for(const [key,max] of Object.entries(limits)){if(typeof b[key]!=='string'||b[key].length>max)return reply({error:'Invalid or oversized '+key},400)}
  const pkg=clean(b.package_code,30),care=clean(b.care_code,30),domain=clean(b.domain_choice,30);
  const name=clean(b.customer_name,120),email=clean(b.customer_email,254).toLowerCase();
  const business=clean(b.business_name,120);
