@@ -23,7 +23,7 @@ export async function verifyAccessIdentity(request, env) {
     if (header.alg !== "RS256" || typeof header.kid !== "string") return null;
     const now = Math.floor(Date.now() / 1000);
     if (payload.iss !== "https://" + domain || !Array.isArray(payload.aud) || !payload.aud.includes(audience)) return null;
-    if (!Number.isInteger(payload.exp) || payload.exp <= now || !Number.isInteger(payload.iat) || payload.iat > now + 60) return null;
+    if (!Number.isInteger(payload.exp) || payload.exp <= now || !Number.isInteger(payload.iat) || payload.iat > now + 60 || payload.exp <= payload.iat || payload.exp - payload.iat > 86400 || (payload.nbf !== undefined && (!Number.isInteger(payload.nbf) || payload.nbf > now + 60))) return null;
     const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
     const permitted = allowed.split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
     if (!email || !permitted.includes(email)) return null;
