@@ -1,0 +1,2 @@
+import html from './index.html';
+export default {async fetch(request){const u=new URL(request.url);if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method Not Allowed',{status:405});if(u.pathname!=='/'&&u.pathname!=='/index.html')return new Response('Not Found',{status:404});return new Response(request.method==='HEAD'?null:html,{headers:{'Content-Type':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'}})}};
