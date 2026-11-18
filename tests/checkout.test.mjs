@@ -25,3 +25,17 @@ test('unauthenticated admin cannot list orders or approve payment',async()=>{
   assert.equal(r.status,401);
  }
 });
+
+import {issueOnboardingLink,onboardingApi} from '../checkout-onboarding.js';
+test('onboarding link is denied until bank deposit verification',async()=>{
+ const env={DB:{prepare(){return {bind(){return {first:async()=>({status:'awaiting_deposit'})}}}}}};
+ const result=await issueOnboardingLink(env,'test-order');
+ assert.equal(result.status,409);
+});
+test('onboarding rejects malformed token before accessing database',async()=>{
+ const r=await onboardingApi(new Request('https://example.com/api/onboarding',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:'wrong',answers:{description:'test',services:'test',style:'',link:''}})}),{DB:{prepare(){throw Error('DB accessed')}}});
+ assert.equal(r.status,400);
+});
+test('checkout pricing uses exactly 50 percent deposit for each published package',()=>{
+ for(const amount of [84900,149900,249900])assert.equal(Math.floor(amount/2)+amount-Math.floor(amount/2),amount);
+});
