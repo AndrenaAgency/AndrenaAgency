@@ -17,7 +17,7 @@ try{
   assert.match(status,/Checkout is available/);
   assert.equal(await page.locator('#checkoutReceipt').isVisible(),false);
   await page.locator('#website').selectOption('premium');
-  assert.match(await page.locator('#checkoutTotal').innerText(),/2,499/);
+  assert.equal((await page.locator('#checkoutTotal').innerText()).replace(/[^0-9]/g,''),'2499');
   assert.match(await page.locator('#checkoutDeposit').innerText(),/1,249\.50/);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   assert.ok(overflow<=2,'Horizontal overflow '+overflow+'px at width '+viewport.width);
