@@ -1,0 +1,30 @@
+name: Production read-only smoke checks
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public website and checkout status
+        shell: bash
+        run: |
+          set -euo pipefail
+          site=$(curl --fail --silent --show-error --max-time 20 'https://andrenaagency.andrenaagency.workers.dev/')
+          echo "$site" | grep -q 'Andrena Agency'
+          status=$(curl --fail --silent --show-error --max-time 20 'https://andrena-checkout.andrenaagency.workers.dev/api/checkout/status')
+          echo "$status" | grep -q '"enabled":true'
+      - name: Confirm admin access is denied without authentication
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 'https://andrena-checkout.andrenaagency.workers.dev/api/admin/orders')
+          test "$status" = 401 || test "$status" = 403
+      - name: Confirm hostile origin is rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 -H 'Origin: https://untrusted.example' 'https://andrena-checkout.andrenaagency.workers.dev/api/checkout/status')
+          test "$status" = 403
