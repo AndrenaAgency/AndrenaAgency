@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "andrena-checkout",
+  "main": "checkout-api-entry.js",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": true,
+  "keep_vars": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "andrena-production-checkout",
+      "database_id": "19ea9388-91f8-4525-b2c4-4e15ef51a923"
+    }
+  ]
+}
