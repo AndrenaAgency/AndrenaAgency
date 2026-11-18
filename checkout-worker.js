@@ -13,7 +13,9 @@ export async function checkoutApi(request,env){
  if(!checkoutReady(env))return reply({error:"Checkout is not accepting orders yet"},503);
  if(!request.headers.get("Content-Type")?.startsWith("application/json"))return reply({error:"JSON required"},415);
  if(Number(request.headers.get("Content-Length")||0)>8192)return reply({error:"Request too large"},413);
- const b=await request.json().catch(()=>null);
+ const raw=await request.text().catch(()=>null);
+ if(raw===null||new TextEncoder().encode(raw).byteLength>8192)return reply({error:"Request too large"},413);
+ const b=(()=>{try{return JSON.parse(raw)}catch{return null}})();
  if(!b||typeof b!=="object"||Array.isArray(b))return reply({error:"Invalid order"},400);
  const pkg=clean(b.package_code,30),care=clean(b.care_code,30),domain=clean(b.domain_choice,30);
  const name=clean(b.customer_name,120),email=clean(b.customer_email,254).toLowerCase();
