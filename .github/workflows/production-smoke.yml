@@ -24,6 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 'https://andrena-checkout.andrenaagency.workers.dev/api/admin/orders')
+          echo "Unauthenticated admin HTTP status: $status"
           test "$status" = 401 || test "$status" = 403
       - name: Confirm hostile origin is rejected
         shell: bash
