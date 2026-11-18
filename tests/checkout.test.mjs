@@ -67,7 +67,6 @@ test('checkout creates fictional order and payment request in isolated mock data
  }finally{globalThis.fetch=original}
 });
 
-import {issueOnboardingLink} from '../checkout-onboarding.js';
 test('onboarding issuance refuses unpaid orders without changing access',async()=>{
  let writes=0;
  const env={DB:{prepare(sql){return {bind(){return {first:async()=>({status:'awaiting_deposit'}),run:async()=>{writes++;return {meta:{changes:1}}}}}}}}};
