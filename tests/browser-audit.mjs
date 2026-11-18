@@ -20,6 +20,7 @@ try{
   assert.equal((await page.locator('#checkoutTotal').innerText()).replace(/[^0-9]/g,''),'2499');
   assert.equal((await page.locator('#checkoutDeposit').innerText()).replace(/[^0-9]/g,''),'124950');
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  if(overflow>2){const offenders=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>document.documentElement.clientWidth+2).slice(0,12).map(e=>({tag:e.tagName,id:e.id,className:typeof e.className==='string'?e.className.slice(0,80):'',right:Math.round(e.getBoundingClientRect().right)})));console.error('Overflow offenders:',JSON.stringify(offenders));}
   assert.ok(overflow<=2,'Horizontal overflow '+overflow+'px at width '+viewport.width);
   assert.deepEqual(errors,[],'Browser errors at width '+viewport.width);
   console.log('PASS viewport '+viewport.width+'x'+viewport.height+'; '+status);
