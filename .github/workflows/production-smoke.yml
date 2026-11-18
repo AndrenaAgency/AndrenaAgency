@@ -16,7 +16,8 @@ jobs:
           set -euo pipefail
           site=$(curl --fail --silent --show-error --max-time 20 'https://andrenaagency.andrenaagency.workers.dev/')
           [[ "$site" == *"Andrena Agency"* ]]
-          status=$(curl --fail --silent --show-error --max-time 20 'https://andrena-checkout.andrenaagency.workers.dev/api/checkout/status')
+          status=$(curl --silent --show-error --max-time 20 'https://andrena-checkout.andrenaagency.workers.dev/api/checkout/status')
+          echo "Checkout status response: $status"
           [[ "$status" == *'"enabled":true'* ]]
       - name: Confirm admin access is denied without authentication
         shell: bash
