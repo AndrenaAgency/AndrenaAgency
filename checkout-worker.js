@@ -27,7 +27,7 @@ export async function checkoutApi(request,env){
  const form=new FormData();form.set("secret",env.CHECKOUT_TURNSTILE_SECRET);form.set("response",b.turnstile_token);
  const ip=request.headers.get("CF-Connecting-IP");if(ip)form.set("remoteip",ip);
  const verified=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body:form}).then(r=>r.json()).catch(()=>null);
- if(!verified?.success||verified.hostname!=="andrenaagency.andrenaagency.workers.dev")return reply({error:"Security verification failed"},403);
+ if(!verified?.success||verified.action!=="checkout"||verified.hostname!=="andrenaagency.andrenaagency.workers.dev")return reply({error:"Security verification failed"},403);
  const id=crypto.randomUUID(),total=PRICES[pkg],deposit=Math.floor(total/2),balance=total-deposit;
  const reference="AND-"+id.replaceAll("-","").slice(0,12).toUpperCase()+"-D";
  const accessHash=await sha(crypto.randomUUID());
