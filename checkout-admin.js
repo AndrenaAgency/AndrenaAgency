@@ -47,9 +47,11 @@ document.getElementById('refresh').onclick=refresh;refresh();
   if(!p)return json({error:"Payment request not found"},404);
   if(p.status!=="awaiting_payment")return json({error:"Already processed"},409);
   const order=await env.DB.prepare("SELECT status FROM orders WHERE id=?").bind(p.order_id).first();
+  if(p.installment!=="deposit"&&p.installment!=="balance")return json({error:"Unknown payment installment"},409);
   const expected=p.installment==="deposit"?"awaiting_deposit":"awaiting_final_payment";
   if(order?.status!==expected)return json({error:"Order not in payable state"},409);
-  const existing=await env.DB.prepare("SELECT id FROM payments WHERE gateway_payment_id=?").bind(b.bank_transaction_reference.trim()).first().catch(()=>null);
+  if(p.installment==="balance"){const brief=await env.DB.prepare("SELECT status FROM onboarding WHERE order_id=?").bind(p.order_id).first();if(brief?.status!=="submitted")return json({error:"Cannot verify final balance before onboarding is submitted"},409)}
+  let existing;try{existing=await env.DB.prepare("SELECT id FROM payments WHERE gateway_payment_id=?").bind(b.bank_transaction_reference.trim()).first()}catch{return json({error:"Cannot verify transaction uniqueness. Try again later."},503)}
   if(existing)return json({error:"Bank transaction already reconciled"},409);
   const next=p.installment==="deposit"?"deposit_verified":"ready_to_launch";
   const tx=b.bank_transaction_reference.trim();
