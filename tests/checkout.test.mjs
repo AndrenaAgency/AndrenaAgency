@@ -83,3 +83,12 @@ test('onboarding issuance unlocks only a simulated verified order',async()=>{
  assert.match(statements[0].sql,/revoked_at IS NOT NULL/);
  assert.match(statements[1].sql,/in_progress/);
 });
+
+test('final balance request cannot be made without authenticated administrator',async()=>{
+ const r=await checkoutAdmin(new Request('https://andrena-checkout.andrenaagency.workers.dev/api/admin/request-balance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:'fictional',client_approved:true})}),{DB:{prepare(){throw Error('Unauthorized database access')}}});
+ assert.equal(r.status,401);
+});
+test('final balance cross-origin POST is blocked',async()=>{
+ const r=await entry.fetch(new Request('https://andrena-checkout.andrenaagency.workers.dev/api/admin/request-balance',{method:'POST',headers:{Origin:'https://untrusted.example','Content-Type':'application/json'},body:'{}'}),{});
+ assert.equal(r.status,403);
+});
