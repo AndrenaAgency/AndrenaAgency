@@ -102,3 +102,11 @@ test('onboarding rejects oversized payload without Content-Length',async()=>{
  const r=await onboardingApi(new Request('https://example.com/api/onboarding',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({padding:'x'.repeat(13000)})}),{DB:{prepare(){throw Error('No database access expected')}}});
  assert.equal(r.status,413);
 });
+
+test('admin routes authenticate before parsing even oversized request bodies',async()=>{
+ const env={DB:{prepare(){throw Error('Database must not be accessed')}}};
+ for(const path of ['/api/admin/request-balance','/api/admin/verify-eft','/api/admin/issue-onboarding']){
+  const r=await checkoutAdmin(new Request('https://example.com'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:'x'.repeat(9000)}),env);
+  assert.equal(r.status,401);
+ }
+});
