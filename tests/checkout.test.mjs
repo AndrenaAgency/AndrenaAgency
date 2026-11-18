@@ -66,3 +66,21 @@ test('checkout creates fictional order and payment request in isolated mock data
   assert.ok(written.some(x=>x.sql.includes('INSERT INTO eft_payment_requests')));
  }finally{globalThis.fetch=original}
 });
+
+import {issueOnboardingLink} from '../checkout-onboarding.js';
+test('onboarding issuance refuses unpaid orders without changing access',async()=>{
+ let writes=0;
+ const env={DB:{prepare(sql){return {bind(){return {first:async()=>({status:'awaiting_deposit'}),run:async()=>{writes++;return {meta:{changes:1}}}}}}}}};
+ const result=await issueOnboardingLink(env,'fictional-order');
+ assert.equal(result.status,409);
+ assert.equal(writes,0);
+});
+test('onboarding issuance unlocks only a simulated verified order',async()=>{
+ const statements=[];
+ const env={DB:{prepare(sql){return {bind(...args){return {first:async()=>({status:'deposit_verified'}),run:async()=>{statements.push({sql,args});return {meta:{changes:1}}}}}}}}};
+ const result=await issueOnboardingLink(env,'fictional-order');
+ assert.match(result.url,/\/onboarding#[0-9a-f-]{72}$/);
+ assert.equal(statements.length,2);
+ assert.match(statements[0].sql,/revoked_at IS NOT NULL/);
+ assert.match(statements[1].sql,/in_progress/);
+});
