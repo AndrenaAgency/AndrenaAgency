@@ -15,7 +15,9 @@ export async function onboardingApi(request,env){
  if(path!=='/api/onboarding'||request.method!=='POST')return respond({error:'Not found'},404);
  if(!request.headers.get('Content-Type')?.startsWith('application/json'))return respond({error:'JSON required'},415);
  if(Number(request.headers.get('Content-Length')||0)>12000)return respond({error:'Too large'},413);
- const b=await request.json().catch(()=>null);
+ const raw=await request.text().catch(()=>null);
+ if(raw===null||new TextEncoder().encode(raw).byteLength>12000)return respond({error:'Too large'},413);
+ const b=(()=>{try{return JSON.parse(raw)}catch{return null}})();
  if(typeof b?.token!=='string'||!/^[0-9a-f-]{72}$/i.test(b.token)||!b.answers||typeof b.answers!=='object'||Array.isArray(b.answers))return respond({error:'Invalid brief'},400);
  const fields=['description','services','style','link'];const answers={};
  for(const k of fields){if(typeof b.answers[k]!=='string'||b.answers[k].length>({description:3000,services:3000,style:1500,link:500}[k]))return respond({error:'Invalid '+k},400);answers[k]=b.answers[k].trim()}
