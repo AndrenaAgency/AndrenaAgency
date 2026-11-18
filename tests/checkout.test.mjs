@@ -110,3 +110,9 @@ test('admin routes authenticate before parsing even oversized request bodies',as
   assert.equal(r.status,401);
  }
 });
+
+test('checkout rejects oversized customer fields before database access',async()=>{
+ const env={CHECKOUT_ENABLED:'true',DB:{prepare(){throw Error('DB should not be touched')}},CHECKOUT_TURNSTILE_SECRET:'test',EFT_ACCOUNT_NUMBER:'test',EFT_ACCOUNT_NAME:'test',EFT_BRANCH_CODE:'test'};
+ const r=await checkoutApi(new Request('https://example.com/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package_code:'starter',care_code:'none',domain_choice:'owned',customer_name:'X'.repeat(121),customer_email:'customer@example.com',business_name:'Test',accepted_terms:true,turnstile_token:'test-token-long'})}),env);
+ assert.equal(r.status,400);assert.match((await r.json()).error,/oversized customer_name/);
+});
