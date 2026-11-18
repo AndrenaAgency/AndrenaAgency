@@ -1,5 +1,6 @@
 import {issueOnboardingLink} from './checkout-onboarding.js';
 import {verifyAccessIdentity} from './checkout-access-auth.js';
+const parseAdminJson=async request=>{const raw=await request.text().catch(()=>null);if(raw===null||new TextEncoder().encode(raw).byteLength>8192)return {error:"Request too large",status:413};try{return {body:JSON.parse(raw)}}catch{return {error:"Invalid JSON",status:400}}};
 const json=(x,status=200)=>Response.json(x,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
 export async function checkoutAdmin(request,env){
  const admin=await verifyAccessIdentity(request,env);
@@ -16,7 +17,8 @@ document.getElementById('refresh').onclick=refresh;refresh();
  }
  if(path==="/api/admin/request-balance"&&request.method==="POST"){
   if(!request.headers.get("Content-Type")?.startsWith("application/json"))return json({error:"JSON required"},415);
-  const b=await request.json().catch(()=>null);
+  const parsed=await parseAdminJson(request);if(parsed.error)return json({error:parsed.error},parsed.status);
+  const b=parsed.body;
   if(typeof b?.order_id!=="string"||b.order_id.length>100||b.client_approved!==true)return json({error:"Order and explicit client approval required"},400);
   const order=await env.DB.prepare("SELECT id,status,balance_cents FROM orders WHERE id=?").bind(b.order_id).first();
   if(!order||order.status!=="deposit_verified")return json({error:"Order must have verified deposit and no outstanding balance request"},409);
@@ -34,14 +36,16 @@ document.getElementById('refresh').onclick=refresh;refresh();
   }catch{return json({error:"Balance request conflict; inspect existing requests before retrying"},409)}
  }
  if(path==="/api/admin/issue-onboarding"&&request.method==="POST"){
-  const b=await request.json().catch(()=>null);
+  const parsed=await parseAdminJson(request);if(parsed.error)return json({error:parsed.error},parsed.status);
+  const b=parsed.body;
   if(!b||typeof b.order_id!=="string")return json({error:"Order ID required"},400);
   const result=await issueOnboardingLink(env,b.order_id);
   return json(result,result.status||200);
  }
  if(path==="/api/admin/verify-eft"&&request.method==="POST"){
   if(!request.headers.get("Content-Type")?.startsWith("application/json"))return json({error:"JSON required"},415);
-  const b=await request.json().catch(()=>null);
+  const parsed=await parseAdminJson(request);if(parsed.error)return json({error:parsed.error},parsed.status);
+  const b=parsed.body;
   if(!b||typeof b.payment_request_id!=="string"||b.bank_confirmed!==true||typeof b.bank_transaction_reference!=="string"||b.bank_transaction_reference.trim().length<5||b.bank_transaction_reference.length>120)return json({error:"Explicit bank confirmation and transaction reference required"},400);
   const p=await env.DB.prepare("SELECT id,order_id,installment,amount_cents,reference,status FROM eft_payment_requests WHERE id=?").bind(b.payment_request_id).first();
   if(!p)return json({error:"Payment request not found"},404);
