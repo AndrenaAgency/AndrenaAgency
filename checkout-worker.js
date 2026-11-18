@@ -19,8 +19,11 @@ export async function checkoutApi(request,env){
  const name=clean(b.customer_name,120),email=clean(b.customer_email,254).toLowerCase();
  const business=clean(b.business_name,120);
  if(!Object.hasOwn(PRICES,pkg)||!CARES.has(care)||!DOMAINS.has(domain))return reply({error:"Invalid package selection"},400);
+ if(b.accepted_terms!==true)return reply({error:"Accept the terms before placing an order"},400);
  if(name.length<2||business.length<2||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return reply({error:"Valid customer and business details required"},400);
  if(typeof b.turnstile_token!=="string"||b.turnstile_token.length<10||b.turnstile_token.length>2048)return reply({error:"Complete the security check"},400);
+ const recent=await env.DB.prepare("SELECT COUNT(*) AS count FROM orders WHERE customer_email=? AND created_at>datetime('now','-1 day')").bind(email).first();
+ if((recent?.count||0)>=3)return reply({error:"Too many recent orders for this email. Contact Andrena for assistance."},429);
  const form=new FormData();form.set("secret",env.CHECKOUT_TURNSTILE_SECRET);form.set("response",b.turnstile_token);
  const ip=request.headers.get("CF-Connecting-IP");if(ip)form.set("remoteip",ip);
  const verified=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body:form}).then(r=>r.json()).catch(()=>null);
