@@ -92,3 +92,13 @@ test('final balance cross-origin POST is blocked',async()=>{
  const r=await entry.fetch(new Request('https://andrena-checkout.andrenaagency.workers.dev/api/admin/request-balance',{method:'POST',headers:{Origin:'https://untrusted.example','Content-Type':'application/json'},body:'{}'}),{});
  assert.equal(r.status,403);
 });
+
+test('checkout rejects oversized payload without Content-Length',async()=>{
+ const env={CHECKOUT_ENABLED:'true',DB:{prepare(){throw Error('No database access expected')}},CHECKOUT_TURNSTILE_SECRET:'test',EFT_ACCOUNT_NUMBER:'test',EFT_ACCOUNT_NAME:'test',EFT_BRANCH_CODE:'test'};
+ const r=await checkoutApi(new Request('https://example.com/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({padding:'x'.repeat(9000)})}),env);
+ assert.equal(r.status,413);
+});
+test('onboarding rejects oversized payload without Content-Length',async()=>{
+ const r=await onboardingApi(new Request('https://example.com/api/onboarding',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({padding:'x'.repeat(13000)})}),{DB:{prepare(){throw Error('No database access expected')}}});
+ assert.equal(r.status,413);
+});
