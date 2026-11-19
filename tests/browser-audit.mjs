@@ -16,6 +16,17 @@ try{
   const status=await page.locator('#checkoutMessage').innerText();
   assert.match(status,/Checkout is available/);
   assert.equal(await page.locator('#checkoutReceipt').isVisible(),false);
+  await page.locator('#checkoutSubmit').click();
+  for(const id of ['checkoutName','checkoutEmail','checkoutBusiness']){
+   assert.equal(await page.locator('#'+id).getAttribute('aria-invalid'),'true');
+   assert.match(await page.locator('#'+id).getAttribute('class')||'',/checkout-invalid/);
+  }
+  assert.match(await page.locator('#checkoutMessage').getAttribute('class')||'',/checkout-error/);
+  await page.locator('#checkoutName').fill('Example Customer');
+  await page.locator('#checkoutEmail').fill('example@example.com');
+  await page.locator('#checkoutBusiness').fill('Example Business');
+  for(const id of ['checkoutName','checkoutEmail','checkoutBusiness'])assert.notEqual(await page.locator('#'+id).getAttribute('aria-invalid'),'true');
+
   await page.locator('#website').selectOption('premium');
   assert.equal((await page.locator('#checkoutTotal').innerText()).replace(/[^0-9]/g,''),'2499');
   assert.equal((await page.locator('#checkoutDeposit').innerText()).replace(/[^0-9]/g,''),'124950');
